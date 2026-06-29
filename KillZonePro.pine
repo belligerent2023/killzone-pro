@@ -1,0 +1,107 @@
+// © belligerentiq
+//@version=6
+indicator("KillZone Pro — Sessions & Kill Zones", overlay=true, max_boxes_count=500, max_labels_count=500)
+
+// ══════════════════════════════════════════════
+// INPUTS
+// ══════════════════════════════════════════════
+grp1 = "── Sessions ──"
+grp2 = "── Kill Zones ──"
+grp3 = "── Colors ──"
+
+show_asia   = input.bool(true, "Asia Session (23:00–02:00 UTC)",     group=grp1)
+show_london = input.bool(true, "London Session (08:00–11:00 UTC)",   group=grp1)
+show_ny     = input.bool(true, "New York Session (13:00–16:00 UTC)", group=grp1)
+show_kz     = input.bool(true, "Show ICT Kill Zones",                group=grp2)
+
+col_asia   = input.color(color.new(#F0A500, 78), "Asia",      group=grp3)
+col_london = input.color(color.new(#3A85D9, 78), "London",    group=grp3)
+col_ny     = input.color(color.new(#2ECC71, 78), "New York",  group=grp3)
+col_kz     = input.color(color.new(#E74C3C, 60), "Kill Zone", group=grp3)
+
+// ══════════════════════════════════════════════
+// SESSION DETECTION
+// ══════════════════════════════════════════════
+in_asia      = not na(time(timeframe.period, "2300-0200:1234567", "UTC"))
+in_london    = not na(time(timeframe.period, "0800-1100:1234567", "UTC"))
+in_ny        = not na(time(timeframe.period, "1300-1600:1234567", "UTC"))
+in_kz_lon    = not na(time(timeframe.period, "0800-1000:1234567", "UTC"))
+in_kz_ny     = not na(time(timeframe.period, "1300-1500:1234567", "UTC"))
+// London-only (после KZ, 10:00–11:00) для отдельного label
+in_lon_after = not na(time(timeframe.period, "1000-1100:1234567", "UTC"))
+
+start_asia    = in_asia   and not in_asia[1]
+start_london  = in_london and not in_london[1]
+start_ny      = in_ny     and not in_ny[1]
+start_kz_lon  = in_kz_lon and not in_kz_lon[1]
+start_kz_ny   = in_kz_ny  and not in_kz_ny[1]
+
+// ══════════════════════════════════════════════
+// HELPER
+// ══════════════════════════════════════════════
+make_box(l, t, b, bg, bc, bw) =>
+    box.new(left=l, top=t, right=l, bottom=b,
+         bgcolor=bg, border_color=bc, border_width=bw)
+
+update_box(b, idx, hi, lo) =>
+    box.set_right(b, idx)
+    box.set_top(b,    math.max(box.get_top(b),    hi))
+    box.set_bottom(b, math.min(box.get_bottom(b), lo))
+
+// ══════════════════════════════════════════════
+// LAYER 1 — SESSIONS (рисуются первыми, снизу)
+// ══════════════════════════════════════════════
+var box b_asia   = na
+var box b_london = na
+var box b_ny     = na
+
+if show_asia
+    if start_asia
+        b_asia := make_box(bar_index, high, low, col_asia, color.new(col_asia, 20), 2)
+        label.new(bar_index, high, "🌏  ASIA",
+             color=color.new(col_asia, 15), textcolor=color.white,
+             size=size.small, style=label.style_label_down, yloc=yloc.abovebar)
+    if in_asia and not na(b_asia)
+        update_box(b_asia, bar_index, high, low)
+
+if show_london
+    if start_london
+        b_london := make_box(bar_index, high, low, col_london, color.new(#3A85D9, 0), 2)
+        label.new(bar_index, high, "🇬🇧  LONDON",
+             color=color.new(col_london, 15), textcolor=color.white,
+             size=size.small, style=label.style_label_down, yloc=yloc.abovebar)
+    if in_london and not na(b_london)
+        update_box(b_london, bar_index, high, low)
+
+if show_ny
+    if start_ny
+        b_ny := make_box(bar_index, high, low, col_ny, color.new(#2ECC71, 0), 2)
+        label.new(bar_index, high, "🗽  NEW YORK",
+             color=color.new(col_ny, 15), textcolor=color.white,
+             size=size.small, style=label.style_label_down, yloc=yloc.abovebar)
+    if in_ny and not na(b_ny)
+        update_box(b_ny, bar_index, high, low)
+
+// ══════════════════════════════════════════════
+// LAYER 2 — KILL ZONES (рисуются поверх)
+// ══════════════════════════════════════════════
+var box b_kzl  = na
+var box b_kzny = na
+
+if show_kz
+    if start_kz_lon
+        b_kzl := make_box(bar_index, high, low, col_kz, color.new(#E74C3C, 0), 2)
+        label.new(bar_index, high, "⚡  KILL ZONE  •  LON",
+             color=color.new(#E74C3C, 5), textcolor=color.white,
+             size=size.small, style=label.style_label_down, yloc=yloc.abovebar)
+    if in_kz_lon and not na(b_kzl)
+        update_box(b_kzl, bar_index, high, low)
+
+if show_kz
+    if start_kz_ny
+        b_kzny := make_box(bar_index, high, low, col_kz, color.new(#E74C3C, 0), 2)
+        label.new(bar_index, high, "⚡  KILL ZONE  •  NY",
+             color=color.new(#E74C3C, 5), textcolor=color.white,
+             size=size.small, style=label.style_label_down, yloc=yloc.abovebar)
+    if in_kz_ny and not na(b_kzny)
+        update_box(b_kzny, bar_index, high, low)
