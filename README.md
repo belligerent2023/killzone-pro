@@ -58,5 +58,5 @@ Past performance does not guarantee future results.
 
 ## Author
 
-Built by [@belligerentiq](https://github.com/belligerentiq)  
+Built by [@belligerentiq](https://github.com/belligerent2023)  
 TradingView: [belligerentiq](https://www.tradingview.com/u/belligerentiq/)
